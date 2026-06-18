@@ -13,8 +13,6 @@ jobs:
       dotnet: 8.0.x
       cli-proj-file: Il2CppDumper\Il2CppDumper.csproj
       cli-build-dir: net8.0
-      gui-proj-file: Il2CppDumper.WinForms\Il2CppDumper.WinForms.csproj
-      gui-build-dir: net8.0-windows
     
     steps:
     - name: Checkout
@@ -39,9 +37,6 @@ jobs:
     - name: Build CLI for release
       run: msbuild ${{ env.cli-proj-file }} -t:rebuild -p:Configuration=${{ env.config }} -p:TargetFramework=${{ env.cli-build-dir }}
 
-    - name: Build GUI for release
-      run: msbuild ${{ env.gui-proj-file }} -t:rebuild -p:Configuration=${{ env.config }} -p:TargetFramework=${{ env.gui-build-dir }}
-      
     - name: Generate release data
       shell: bash
       run: |
@@ -51,23 +46,17 @@ jobs:
         echo "tag_name=v${UPDATE_TIME}" >> $GITHUB_ENV
         echo "release_name=${UPDATE_TIME} (${GIT_COMMIT_ID})" >> $GITHUB_ENV
         echo "cli_zip_name=Il2CppDumper-CLI-${UPDATE_TIME}_${GIT_COMMIT_ID}.zip" >> $GITHUB_ENV
-        echo "gui_zip_name=Il2CppDumper-GUI-${UPDATE_TIME}_${GIT_COMMIT_ID}.zip" >> $GITHUB_ENV
-        
+
     - name: Create package directories
       run: |
         New-Item -ItemType Directory -Path C:\builtfiles\CLI -Force > $null
-        New-Item -ItemType Directory -Path C:\builtfiles\GUI -Force > $null
 
     - name: Copy CLI release files
       run: Copy-Item -Path Il2CppDumper\bin\Release\${{ env.cli-build-dir }}\* -Destination C:\builtfiles\CLI -Recurse
 
-    - name: Copy GUI release files
-      run: Copy-Item -Path Il2CppDumper.WinForms\bin\Release\${{ env.gui-build-dir }}\* -Destination C:\builtfiles\GUI -Recurse
-
     - name: Create release archives
       run: |
         Compress-Archive -Path C:\builtfiles\CLI\* -DestinationPath C:\builtfiles\${{ env.cli_zip_name }} -Force
-        Compress-Archive -Path C:\builtfiles\GUI\* -DestinationPath C:\builtfiles\${{ env.gui_zip_name }} -Force
 
     - name: Upload packaged artifacts
       uses: actions/upload-artifact@v4.6.2
@@ -75,7 +64,6 @@ jobs:
         name: packaged-release-assets
         path: |
           C:\builtfiles\${{ env.cli_zip_name }}
-          C:\builtfiles\${{ env.gui_zip_name }}
         if-no-files-found: error
         
     - name: Release with notes
